@@ -33,7 +33,7 @@ Then open **uim** on the device: turn the keyboard on, switch to it, pick a bott
 
 ## Not yet (see SPEC.md §8)
 
-KO predictions beyond the "English on the same keys" reading (M4), JA kana-kanji conversion (M6:
-the bar offers the kana in both scripts), EN completions in A / a (M7), settings for row height
+KO predictions beyond the "English on the same keys" reading (M4), JA segment editing (M6:
+conversion covers the whole composition), EN completions in A / a (M7), settings for row height
 and the narrow/wide threshold, and calibration (M8). ⇧ in KO/JA wide cycles off → once → locked
 on each tap rather than locking on a double tap.

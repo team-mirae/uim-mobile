@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>uim-mobile Layouts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500&family=Noto+Sans+JP:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Plan: default theme (cerulean primary, indigo structure, scarlet only for reserved/notes).
+   Layout: one live board at the top, then a gallery of every layout, each drawn in the
+   screen class where it's used. Keys are flex items whose grow = width in u (13u per row). */
+:root {
+  --bg: #f7fffc;
+  --surface: #e9fff9;
+  --border: #c9e6dc;
+  --text: #1d3354;
+  --muted: #4c6280;
+  --accent: #467599;
+  --accent-ink: #ffffff;
+  --secondary: #9ed8b8;
+  --alert: #d64045;
+  --board: #d9ebe5;
+  --key: #ffffff;
+  --key-fn: #c4dcd5;
+  --key-shadow: #a9c7bd;
+  --rsv-a: #f2e4e4;
+  --rsv-b: #fbf3f3;
+  --font-body: "IBM Plex Sans", "IBM Plex Sans KR", "Noto Sans JP", system-ui, sans-serif;
+  --font-key: "IBM Plex Sans", "IBM Plex Sans KR", "Noto Sans JP", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1b2e; --surface: #1d3354; --border: #2c4a72; --text: #e9fff9; --muted: #a9c3d6;
+    --accent: #7fa9c9; --accent-ink: #0f1b2e; --secondary: #9ed8b8; --alert: #e8686c;
+    --board: #16253d; --key: #28446a; --key-fn: #1d3354; --key-shadow: #0b1524;
+    --rsv-a: #2a2433; --rsv-b: #1f1c2b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1b2e; --surface: #1d3354; --border: #2c4a72; --text: #e9fff9; --muted: #a9c3d6;
+  --accent: #7fa9c9; --accent-ink: #0f1b2e; --secondary: #9ed8b8; --alert: #e8686c;
+  --board: #16253d; --key: #28446a; --key-fn: #1d3354; --key-shadow: #0b1524;
+  --rsv-a: #2a2433; --rsv-b: #1f1c2b;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.55 var(--font-body);
+}
+main { max-width: 1100px; margin: 0 auto; padding: 32px 16px 56px; display: grid; gap: 40px; }
+header { display: grid; gap: 8px; max-width: 68ch; }
+h1 { font-size: 2rem; line-height: 1.15; margin: 0; font-weight: 600; text-wrap: balance; }
+h2 { font-size: 1.3rem; margin: 0; font-weight: 600; text-wrap: balance; }
+h3 { font-size: 1.02rem; margin: 0; font-weight: 600; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+code, .mono { font-family: var(--font-mono); font-size: .88em; }
+
+/* live board */
+.live { display: grid; gap: 14px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg button {
+  font: 500 .9rem var(--font-body); color: var(--text); background: var(--surface);
+  border: 0; padding: 7px 14px; cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.seg button:focus-visible, .k:focus-visible { outline: 2px solid var(--alert); outline-offset: 2px; }
+.out {
+  font: 1.05rem/1.5 var(--font-key); min-height: 3.2em; padding: 10px 12px; border-radius: 8px;
+  background: var(--surface); border: 1px solid var(--border); white-space: pre-wrap; word-break: break-all;
+}
+.out .caret { display: inline-block; width: 2px; height: 1.1em; background: var(--accent); vertical-align: -0.15em; }
+.hint { font-size: .85rem; color: var(--muted); }
+
+/* frames */
+.scroll { overflow-x: auto; padding-bottom: 4px; }
+.frame { container-type: inline-size; margin: 0; }
+.frame.narrow { width: 380px; max-width: 100%; }
+.frame.wide { width: 780px; min-width: 620px; }
+.board {
+  background: var(--board); border-radius: 14px; padding: 6px;
+  display: grid; gap: 5px;
+}
+.row { display: flex; gap: 5px; height: 44px; }
+.row.block { height: calc(44px * 4 + 5px * 3); }
+.k {
+  flex: var(--w) 1 0; min-width: 0;
+  display: grid; place-items: center; position: relative;
+  background: var(--key); color: var(--text); border: 0; border-radius: 7px;
+  box-shadow: 0 1.5px 0 var(--key-shadow);
+  font: 400 min(4.4cqi, 21px)/1 var(--font-key); padding: 0;
+  cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
+}
+.k:active { transform: translateY(1px); box-shadow: none; }
+.k.fn { background: var(--key-fn); font-size: min(3.2cqi, 14px); font-weight: 500; }
+.k.mode { background: var(--key-fn); font-weight: 600; font-size: min(3.6cqi, 16px); }
+.k.on { background: var(--accent); color: var(--accent-ink); }
+.k.lock { background: var(--accent); color: var(--accent-ink); outline: 2px solid var(--text); outline-offset: -2px; }
+.k.other { text-decoration: underline dotted var(--accent) 2px; text-underline-offset: 4px; }
+.k.rsv {
+  cursor: default; box-shadow: none; color: var(--muted); font-size: min(2.6cqi, 12px);
+  background: repeating-linear-gradient(135deg, var(--rsv-a) 0 6px, var(--rsv-b) 6px 12px);
+  border: 1px dashed var(--alert);
+}
+.k.rsv:active { transform: none; }
+.k.cand {
+  background: transparent; box-shadow: none; justify-content: start; display: flex;
+  align-items: center; gap: 0; font-size: min(3.4cqi, 15px); overflow: hidden; cursor: default;
+}
+.k.cand span { padding: 0 8px; white-space: nowrap; }
+.k.cand span + span { border-left: 1px solid var(--border); }
+.k.cand span:first-child { font-weight: 600; }
+.k .sh {
+  position: absolute; top: 3px; right: 4px; font-size: min(2.5cqi, 11px); color: var(--muted); line-height: 1;
+}
+.k.on .sh, .k.lock .sh { color: var(--accent-ink); }
+.k svg { width: min(4.6cqi, 22px); height: min(4.6cqi, 22px); }
+.k.flick { touch-action: none; font-size: min(4cqi, 17px); }
+.k.sound { font-size: min(3.6cqi, 16px); }
+.k.flick.sound { font-size: min(2.9cqi, 12.5px); letter-spacing: -0.02em; }
+.k.flick.sound.long { font-size: min(2.3cqi, 10px); letter-spacing: -0.04em; }
+.k .d { position: absolute; font-size: min(2.5cqi, 10.5px); line-height: 1; color: var(--muted); pointer-events: none; }
+.k .dn { top: 3px; left: 50%; transform: translateX(-50%); }
+.k .ds { bottom: 3px; left: 50%; transform: translateX(-50%); }
+.k .dw { left: 3px; top: 50%; transform: translateY(-50%); }
+.k .de { right: 3px; top: 50%; transform: translateY(-50%); }
+.k .tag { position: absolute; top: 3px; left: 4px; font-size: min(2.4cqi, 10px); line-height: 1; color: var(--accent); }
+.k.cflick .d { color: var(--accent); opacity: .8; }
+
+/* gallery */
+.gallery { display: grid; gap: 28px; }
+.item { display: grid; gap: 10px; }
+.item .meta { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+.chip {
+  font: 500 .75rem var(--font-mono); padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+}
+.chip.draft { border-color: var(--alert); color: var(--alert); background: transparent; }
+.notes { margin: 0; padding-left: 1.2em; color: var(--muted); font-size: .92rem; max-width: 75ch; display: grid; gap: 2px; }
+.pair { display: flex; flex-wrap: wrap; gap: 20px; align-items: start; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: .88rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 18px; height: 14px; border-radius: 4px; display: inline-block; }
+footer { font-size: .85rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 14px; }
+
+@media (prefers-reduced-motion: reduce) { .k:active { transform: none; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>uim-mobile layouts</h1>
+    <p class="muted">Example drawings of every layout in <code>SPEC.md</code> v0.15. Each board is 13u wide with 6 rows. Keys stretch to fill a row, and hatched areas are reserved: they're drawn but ignore touches.</p>
+    <div class="legend" aria-label="Legend">
+      <span><i class="sw" style="background:var(--key);box-shadow:0 1px 0 var(--key-shadow)"></i>character</span>
+      <span><i class="sw" style="background:var(--key-fn)"></i>function / mode</span>
+      <span><i class="sw" style="background:var(--accent)"></i>active mode</span>
+      <span><i class="sw" style="background:repeating-linear-gradient(135deg,var(--rsv-a) 0 4px,var(--rsv-b) 4px 8px);border:1px dashed var(--alert)"></i>reserved</span>
+      <span><b style="text-decoration:underline dotted var(--accent) 2px;text-underline-offset:3px;color:var(--text)">T</b> other-case key (EN narrow)</span>
+      <span><span class="mono" style="font-size:.8rem">⇧</span> small corner legend = Shift output</span>
+      <span>small N / E / S / W legends = flick output (KO narrow); the big legend is the tap</span>
+    </div>
+  </header>
+
+  <section class="live" aria-labelledby="live-h">
+    <h2 id="live-h">Try it</h2>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Screen class">
+        <button type="button" id="cls-narrow" aria-pressed="true">Narrow (phone)</button>
+        <button type="button" id="cls-wide" aria-pressed="false">Wide (Fold / landscape)</button>
+      </div>
+      <div class="seg" role="group" aria-label="Bottom row" id="bot-seg"></div>
+      <div class="seg" role="group" aria-label="EN predictive layout" id="e-seg">
+        <button type="button" data-e="d" aria-pressed="true">E (§3.3)</button>
+        <button type="button" data-e="sound" aria-pressed="false">alt A: sound</button>
+        <button type="button" data-e="flick" aria-pressed="false">alt A + flicks</button>
+        <button type="button" data-e="qg" aria-pressed="false">alt B: QWERTY groups</button>
+        <button type="button" data-e="c" aria-pressed="false">alt C: near-exact</button>
+      </div>
+      <span class="hint">The mode keys (S E A a 한 ひ カ, and 한A1 あA1 on the cycle rows), ⇪ and ⇧ work. Character keys type their legend as is. In KO narrow, drag on a key to flick it.</span>
+    </div>
+    <div class="out" id="out" aria-live="polite"></div>
+    <div class="scroll"><div id="live-frame" class="frame narrow"></div></div>
+    <p class="hint">This shows raw key legends only: no Hangul composition, kana conversion or predictions. The candidate bar shows sample content.</p>
+  </section>
+
+  <section class="gallery" aria-labelledby="bot-h">
+    <h2 id="bot-h">Bottom rows</h2>
+    <p class="muted" style="max-width:75ch">The default row (Idempotent, KO priority) is used in every drawing below. Settings can swap in one of the others for every layout. On the idempotent rows every mode has its own key. On the cycle rows, 한A1 steps KO → EN → symbols and あA1 steps ひ → カ → EN → symbols; from a state outside its cycle, each goes to its first state. On Cycle, A and Cycle, a, the A or a key goes to English, and to the other case if it's already there.</p>
+    <div id="bottoms" class="gallery" style="gap:14px"></div>
+  </section>
+
+  <section class="gallery" aria-labelledby="gal-h">
+    <h2 id="gal-h">Every layout</h2>
+    <div id="gallery" class="gallery"></div>
+  </section>
+
+  <footer>Drawn from <code>~/Projects/uim-mobile/SPEC.md</code> (draft v0.15, 2026-11-01). Row 2–4 symbols and page 2 are proposals.</footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  const ICON = {
+    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
+    paste: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="16" rx="2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>',
+    bs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M9 5h11v14H9l-6-7z"/><path d="M12 9l5 6M17 9l-5 6"/></svg>',
+    enter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 5v7a2 2 0 0 1-2 2H6"/><path d="M10 10l-4 4 4 4"/></svg>',
+    caps: '<svg viewBox="0 0 32 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M16 3L3 14h7v7h12v-7h7z"/></svg>',
+    shift: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l-8 8h4.5v7h7v-7H20z"/></svg>'
+  };
+
+  // key helpers: c = character, legend "main|shift"
+  const c = (s, w = 1) => { const [l, sh] = s.split("|"); return { t: "c", l, sh, w }; };
+  const row = (str, w = 1) => str.split(" ").map(s => c(s, w));
+  const rsv = (w, label = "") => ({ t: "rsv", w, l: label });
+  // flick key: "C N E S W", "-" = nothing in that direction
+  const fk = (s, extra) => { const [l, n, e, so, w] = s.split(" ").map(x => x === "-" ? "" : x); return Object.assign({ t: "f", l, n, e, s: so, w_: w, w: 1 }, extra || {}); };
+  // consonant that flicks like key 1 (N ㅗ, E ㅏ, S ㅜ, W ㅓ); tap is the consonant alone
+  const SYL = { n: "ㅗ", e: "ㅏ", s: "ㅜ", w_: "ㅓ" };
+  const cf = (ch) => ({ t: "f", cons: true, l: ch, n: ch + "ㅗ", e: ch + "ㅏ", s: ch + "ㅜ", w_: ch + "ㅓ", w: 1 });
+  const cfrow = (str) => str.split(" ").map(cf);
+  const SMALL = { tag: "小" };
+  // EN predictive sound key: one tap = one sound; the live board types the sound as ‹label›
+  const snd = (l) => ({ t: "c", l, w: 1, sound: true });
+  // spelled key (candidates B, C): types the letter in lower case, or ‹letters› for a group
+  const ltr = (l) => ({ t: "c", l, w: 1, sound: true, out: l.length === 1 ? l.toLowerCase() : "‹" + l.toLowerCase() + "›" });
+  // consonant sound key that flicks: E あ, W ʌ (어), N o(au), S う; tap = consonant alone
+  const sndf = (l) => { const o = (v) => "‹" + l + "›‹" + v + "›";
+    return { t: "f", l, tapOut: "‹" + l + "›", e: o("あ"), w_: o("ʌ"), n: o("au"), s: o("う"),
+             dl: { e: "あ", w_: "어", n: "au", s: "う" }, sound: true, w: 1 }; };
+
+  const CANDS = {
+    en: ["the", "they", "then"], ko: ["학교", "學校", "gkrry"], ja: ["変換", "返還", "へんかん"], jak: ["ヘンカン", "変換", "へんかん"],
+    sym: [], pred: ["they", "day", "the"]
+  };
+  const top = (cands) => [
+    { t: "fn", a: "copy", w: 1, icon: "copy", l: "Copy" },
+    { t: "fn", a: "paste", w: 1, icon: "paste", l: "Paste" },
+    { t: "cand", w: 8, list: cands },
+    { t: "fn", a: "bs", w: 3, icon: "bs", l: "Backspace" }
+  ];
+  const M = (a, l, w = 1) => ({ t: "mode", a, w, l });
+  const SPACE = (w) => ({ t: "fn", a: "space", w, l: "space" });
+  const ENTER = { t: "fn", a: "enter", w: 3, icon: "enter", l: "Enter" };
+  const BOTTOMS = {
+    "default": { name: "Idempotent, KO priority", keys: [M("S", "S"), M("E", "E"), M("A", "A"), M("a", "a"), SPACE(3), M("K", "한"), M("h", "ひ"), M("k", "カ"), ENTER] },
+    "modes":   { name: "Idempotent, JA priority", keys: [M("S", "S"), M("E", "E"), M("A", "A"), M("a", "a"), SPACE(3), M("h", "ひ"), M("k", "カ"), M("K", "한"), ENTER] },
+    "cycA":    { name: "Cycle, A", keys: [M("cycKO", "한A1", 1.5), M("cycJA", "あA1", 1.5), M("A2", "A"), SPACE(6), ENTER] },
+    "cyca":    { name: "Cycle, a", keys: [M("cycKO", "한A1", 1.5), M("cycJA", "あA1", 1.5), M("a2", "a"), SPACE(6), ENTER] },
+    "cycE":    { name: "Cycle, E", keys: [M("cycKO", "한A1", 1.5), M("cycJA", "あA1", 1.5), M("E", "E"), SPACE(6), ENTER] }
+  };
+  let BOTTOM = "default";
+  const bottom = (v) => BOTTOMS[v || BOTTOM].keys;
+  const caps = { t: "fn", a: "caps", w: 1, icon: "caps", l: "Caps (A/a)" };
+  const shift = { t: "fn", a: "shift", w: 1, icon: "shift", l: "Shift" };
+
+  const LAYOUTS = {
+    "en-wide-a": { cand: "en", rows: [
+      row("1 2 3 4 5 6 7 8 9 0 - ^"),
+      row("q w e r t y u i o p @ ["),
+      row("a s d f g h j k l ; : ]"),
+      [caps, ...row("z x c v b n m , . / \\")] ] },
+    "en-wide-A": { cand: "en", rows: [
+      row("1 2 3 4 5 6 7 8 9 0 - ^"),
+      row("Q W E R T Y U I O P @ ["),
+      row("A S D F G H J K L ; : ]"),
+      [caps, ...row("Z X C V B N M , . / \\")] ] },
+    "en-narrow-a": { cand: "en", rows: [
+      [{ ...c("T"), other: true }, { ...c("A"), other: true }, ...row("k l i o p")],
+      row("q w e r t y u"), row("a s d f g h j"), row("z x c v b n m") ] },
+    "en-narrow-A": { cand: "en", rows: [
+      [{ ...c("e"), other: true }, { ...c("t"), other: true }, ...row("K L I O P")],
+      row("Q W E R T Y U"), row("A S D F G H J"), row("Z X C V B N M") ] },
+    "en-pred": { cand: "pred", rows: [
+      ["あ", "에이", "에", "い", "오", "う"].map(snd),
+      ["æ", "아우", "イー", "아이", "o(au)", "ü"].map(snd),
+      ["p b", "t d", "k g", "f v h", "s z", "sh ch j"].map(snd),
+      ["th", "m n ng", "r l", "w y", "*", "·"].map(snd) ] },
+    "en-pred-qg": { cand: "pred", rows: [
+      ["A", "E", "I", "O", "U", "Y"].map(ltr),
+      ["QWER", "RTYU", "UIOP"].map(ltr),
+      ["ASDF", "FGHJ", "HJKL"].map(ltr),
+      ["ZXCV", "CVB", "VBNM"].map(ltr) ] },
+    "en-pred-c": { cand: "pred", rows: [
+      ["A", "E", "I", "O", "U", "Y"].map(ltr),
+      [...["Q", "W", "R", "T", "P"].map(ltr), { t: "fn", a: "capprev", w: 1, l: "⇪" }],
+      ["S", "D", "F", "GH", "HJ", "KL"].map(ltr),
+      ["Z", "X", "C", "V", "B", "NM"].map(ltr) ] },
+    "en-pred-d": { cand: "pred", rows: [
+      ["A", "E", "I", "O", "U"].map(ltr),
+      ["S", "T", "ZQP", "N", "H"].map(ltr),
+      ["XJK", "R", "L", "D", "VBY"].map(ltr),
+      ["G", "C", "M", "W", "F"].map(ltr) ] },
+    "en-pred-flick": { cand: "pred", rows: [
+      ["あ", "에이", "에", "い", "오", "う"].map(snd),
+      ["æ", "아우", "イー", "아이", "o(au)", "ü"].map(snd),
+      ["p b", "t d", "k g", "f v h", "s z", "sh ch j"].map(sndf),
+      [...["th", "m n ng", "r l", "w y"].map(sndf), snd("*"), snd("·")] ] },
+    "ko-wide": { cand: "ko", rows: [
+      row("ㅃ|1 ㅉ|2 ㄸ|3 ㄲ|4 ㅆ|5 ㅟ|6 ㅝ|7 ㅚ|8 ㅢ|9 ㅘ|0 !|? (|)"),
+      row("ㅂ|ㅃ ㅈ|ㅉ ㄷ|ㄸ ㄱ|ㄲ ㅅ|ㅆ ㅛ ㅕ ㅑ ㅐ|ㅒ ㅔ|ㅖ '|\" [|「"),
+      row("ㅁ ㄴ ㅇ ㄹ ㅎ ㅗ ㅓ ㅏ ㅣ ~|- :|; ]|」"),
+      [shift, ...row("ㅋ ㅌ ㅊ ㅍ ㅠ ㅜ ㅡ , . · \\|_")] ] },
+    "ko-narrow": { cand: "ko", rows: [
+      [...cfrow("ㅃ ㅉ ㄸ ㄲ ㅆ"), fk("ㅢ ㅡ ㅣ ㅡ ㅣ"), fk("ㅙ ㅗ ㅐ ㅜ -"), fk("ㅞ ㅗ ㅔ ㅜ -")],
+      [...cfrow("ㅂ ㅈ ㄷ ㄱ ㅅ"), fk("ㅚ ㅗ ㅣ ㅟ -"), fk("ㅟ ㅚ ㅣ ㅜ -"), fk("ㅣ ㅡ ㅏ ㅡ ㅓ")],
+      [...cfrow("ㅁ ㄴ ㅇ ㄹ ㅎ"), fk("ㅡ ㅗ ㅣ ㅜ ㅣ"), fk("ㅏ ㅘ ㅐ - ㅐ"), fk("ㅓ - ㅔ ㅝ ㅔ")],
+      [...cfrow("ㅋ ㅌ ㅊ ㅍ"), fk("ㅘ ㅗ ㅏ ㅜ ㅓ"), fk("# ㅛ ㅑ ㅠ ㅕ"), c("ㅒ"), c("ㅖ")] ] },
+    "ja-wide": { cand: "ja", rows: [
+      row("ぬ ふ あ|ぁ う|ぅ え|ぇ お|ぉ や|ゃ ゆ|ゅ よ|ょ わ|を ほ へ ー"),
+      [...row("た て い|ぃ す か ん な に ら せ ゛ ゜|「"), { t: "fn", a: "h", w: 1, l: "Hi" }],
+      [...row("ち と し は き く ま の り れ け む|」"), { t: "fn", a: "k", w: 1, l: "Ka" }],
+      [shift, ...row("っ つ|っ さ そ ひ こ み も ね|、 る|。 め|・ ろ")] ] },
+    "ja-narrow": { cand: "ja", rows: [
+      [fk("あ う え お い"), fk("か く け こ き"), fk("さ す せ そ し"), fk("ぁ ぅ ぇ ぉ ぃ", SMALL), fk("、 - ？ - ！")],
+      [fk("た つ て と ち"), fk("な ぬ ね の に"), fk("は ふ へ ほ ひ"), { ...c("っ"), tag: "小" }, fk("。 - ？ - ！")],
+      [fk("ま む め も み"), fk("や ゆ ） よ （"), fk("ら る れ ろ り"), fk("ゃ ゅ - ょ -", SMALL), fk("\" 『 」 』 「", { cap: "「」" })],
+      [c("゛"), fk("わ ん ー - を"), c("゜"), { ...c("ゎ"), tag: "小" }, fk("・ - ▸ - ◂", { caret: true })] ] },
+    "sym-1": { cand: "sym", rows: [
+      row("1 2 3 4 5 6 7 8 9 0"),
+      row("! \" # $ % & ' ( ) ="),
+      row("- ^ ~ | @ ` [ { ] }"),
+      row("; + : * , . / ? \\ _") ] },
+    "sym-2": { cand: "sym", rows: [
+      row("1 2 3 4 5 6 7 8 9 0"),
+      row("< > — … 、 。 ・ ※ 〜 ￥"),
+      [...row("「 」 『 』 【 】"), rsv(1), rsv(1), rsv(1), rsv(1)],
+      [rsv(1), rsv(1), rsv(1), rsv(1), rsv(1), rsv(1), rsv(1), rsv(1), rsv(1), rsv(1)] ] }
+  };
+
+  // which layout id for a state
+  function layoutFor(st) {
+    if (st.sym) return st.sym === 1 ? "sym-1" : "sym-2";
+    if (st.mode === "E") return { sound: "en-pred", flick: "en-pred-flick", qg: "en-pred-qg", c: "en-pred-c" }[st.elayout] || "en-pred-d";
+    if (st.mode === "K") return st.wide ? "ko-wide" : "ko-narrow";
+    if (st.mode === "h" || st.mode === "k") return st.wide ? "ja-wide" : "ja-narrow";
+    return (st.wide ? "en-wide-" : "en-narrow-") + st.mode;
+  }
+
+  function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch])); }
+
+  const kata = (x) => x ? String(x).replace(/[\u3041-\u3096]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60)) : x;
+  function keyEl(k, st, onKey) {
+    if (st && st.mode === "k" && (k.t === "c" || k.t === "f") && !k.cons)
+      k = Object.assign({}, k, { l: kata(k.l), sh: kata(k.sh), n: kata(k.n), e: kata(k.e), s: kata(k.s), w_: kata(k.w_) });
+    const b = el(k.t === "rsv" || k.t === "cand" ? "div" : "button", "k");
+    b.style.setProperty("--w", k.w);
+    if (b.tagName === "BUTTON") b.type = "button";
+    if (k.t === "rsv") { b.classList.add("rsv"); b.textContent = k.l || ""; b.setAttribute("aria-label", "reserved"); return b; }
+    if (k.t === "cand") {
+      b.classList.add("cand");
+      b.innerHTML = k.list.length ? k.list.map(x => "<span>" + esc(x) + "</span>").join("")
+                                  : '<span class="muted" style="font-weight:400">candidates</span>';
+      return b;
+    }
+    if (k.t === "fn" || k.t === "mode") b.classList.add(k.t);
+    if (k.t === "f") {
+      b.classList.add("flick"); if (k.cons) b.classList.add("cflick");
+      const sm = (x, cls) => { const f = cls === "dw" ? "w_" : cls[1];
+        return x ? '<span class="d ' + cls + '">' + esc(k.dl ? k.dl[f] : k.cons ? SYL[f] : x) + "</span>" : ""; };
+      if (k.sound) b.classList.add("sound");
+      if (k.sound && k.l.length > 5) b.classList.add("long");
+      b.innerHTML = esc(k.cap || k.l) + (k.tag ? '<span class="tag">' + esc(k.tag) + "</span>" : "") + sm(k.n, "dn") + sm(k.e, "de") + sm(k.s, "ds") + sm(k.w_, "dw");
+      b.setAttribute("aria-label", k.l + " (flick: " + ["N " + (k.n || "–"), "E " + (k.e || "–"), "S " + (k.s || "–"), "W " + (k.w_ || "–")].join(", ") + ")");
+      if (onKey) {
+        let x0 = 0, y0 = 0, down = false;
+        b.addEventListener("pointerdown", e => { down = true; x0 = e.clientX; y0 = e.clientY; try { b.setPointerCapture(e.pointerId); } catch (_) {} });
+        b.addEventListener("pointercancel", () => { down = false; });
+        b.addEventListener("pointerup", e => {
+          if (!down) return; down = false;
+          const dx = e.clientX - x0, dy = e.clientY - y0, th = b.getBoundingClientRect().width * 0.4;
+          let out = k.tapOut || k.l;
+          if (Math.hypot(dx, dy) >= th) {
+            if (k.caret) { onKey({ t: "caret", d: Math.round(dx / (th / 2)) }); return; }
+            out = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? k.e : k.w_) : (dy > 0 ? k.s : k.n);
+          }
+          onKey({ t: "c", l: out || "" });
+        });
+        b.addEventListener("click", e => { if (e.detail === 0) onKey({ t: "c", l: k.tapOut || k.l }); });
+      }
+      return b;
+    }
+    if (k.icon) { b.innerHTML = ICON[k.icon]; b.setAttribute("aria-label", k.l); }
+    else if (k.t === "c") {
+      b.innerHTML = esc(k.l) + (k.sh ? '<span class="sh">' + esc(k.sh) + "</span>" : "") + (k.tag ? '<span class="tag">' + esc(k.tag) + "</span>" : "");
+      if (k.other) b.classList.add("other");
+      if (k.sound) b.classList.add("sound");
+      b.setAttribute("aria-label", k.l + (k.sh ? ", shift " + k.sh : ""));
+    } else b.textContent = k.l;
+    if (st) {
+      const m = st.mode;
+      if (k.a === "S" && st.sym) { b.classList.add("on"); b.textContent = "S" + st.sym; }
+      if (!st.sym && k.a === m) b.classList.add("on");
+      if (!st.sym && ((k.a === "A2" && m === "A") || (k.a === "a2" && m === "a") || (k.a === "cycKO" && m === "K") || (k.a === "cycJA" && (m === "h" || m === "k")))) b.classList.add("on");
+      if (st.sym && (k.a === "cycKO" || k.a === "cycJA")) b.title = "symbols open";
+      if (k.a === "caps" && m === "A") b.classList.add("on");
+      if (k.a === "shift" && st.shift) b.classList.add(st.shift === 2 ? "lock" : "on");
+      if (st.shift && k.t === "c" && k.sh && k.sh !== "F10") b.innerHTML = esc(k.sh) + '<span class="sh">' + esc(k.l) + "</span>";
+    }
+    if (onKey) b.addEventListener("click", () => onKey(k));
+    return b;
+  }
+
+  function board(id, st, onKey, variant) {
+    const L = LAYOUTS[id];
+    const wrap = el("div", "board");
+    const add = (keys, cls) => { const r = el("div", "row" + (cls ? " " + cls : "")); keys.forEach(k => r.appendChild(keyEl(k, st, onKey))); wrap.appendChild(r); };
+    add(top(CANDS[L.cand === "ja" && st && st.mode === "k" ? "jak" : L.cand]));
+    if (L.block) add([rsv(13, L.block)], "block");
+    else L.rows.forEach(r => add(r));
+    add(bottom(variant));
+    return wrap;
+  }
+
+  // ---------- live board ----------
+  const st = { wide: false, mode: "a", sym: 0, shift: 0, lastEn: "a" };
+  let text = "", caret = 0;
+  const out = document.getElementById("out");
+  const frame = document.getElementById("live-frame");
+  let lastShiftTap = 0;
+
+  function renderOut() { const a = Array.from(text); out.innerHTML = esc(a.slice(0, caret).join("")) + '<span class="caret"></span>' + esc(a.slice(caret).join("")); }
+  function ins(ch) { const a = Array.from(text); a.splice(caret, 0, ...Array.from(ch)); text = a.join(""); caret += Array.from(ch).length; }
+  function renderLive() {
+    frame.className = "frame " + (st.wide ? "wide" : "narrow");
+    frame.replaceChildren(board(layoutFor(st), st, onKey, BOTTOM));
+    document.querySelectorAll("#e-seg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.e === (st.elayout || "d"))));
+    document.querySelectorAll("#bot-seg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === BOTTOM)));
+    document.getElementById("cls-narrow").setAttribute("aria-pressed", String(!st.wide));
+    document.getElementById("cls-wide").setAttribute("aria-pressed", String(st.wide));
+  }
+  function onKey(k) {
+    if (k.t === "caret") { caret = Math.max(0, Math.min(Array.from(text).length, caret + k.d)); }
+    else if (k.t === "c") {
+      let ch = k.out || (k.sound ? "‹" + k.l + "›" : k.l);
+      if (st.shift && k.sh) ch = k.sh === "F10" ? "" : k.sh;
+      ins(ch);
+      if (st.shift === 1) st.shift = 0;
+    } else switch (k.a) {
+      case "S": st.sym = st.sym === 0 ? 1 : st.sym === 1 ? 2 : 0; st.shift = 0; break;
+      case "E": case "A": case "a": case "K": case "h": case "k": st.mode = k.a; st.sym = 0; st.shift = 0; break;
+      case "A2": st.mode = (!st.sym && st.mode === "A") ? "a" : "A"; st.sym = 0; st.shift = 0; break;
+      case "a2": st.mode = (!st.sym && st.mode === "a") ? "A" : "a"; st.sym = 0; st.shift = 0; break;
+      case "cycKO": case "cycJA": {
+        const cyc = k.a === "cycKO" ? ["K", "EN", "SYM"] : ["h", "k", "EN", "SYM"];
+        const cur = st.sym ? "SYM" : (st.mode === "A" || st.mode === "a") ? "EN" : st.mode;
+        const i = cyc.indexOf(cur);
+        const next = i < 0 ? cyc[0] : cyc[(i + 1) % cyc.length];
+        st.shift = 0;
+        if (next === "SYM") st.sym = 1;
+        else { st.sym = 0; st.mode = next === "EN" ? st.lastEn : next; }
+        break;
+      }
+      case "caps": st.mode = st.mode === "A" ? "a" : "A"; break;
+      case "shift": {
+        const now = Date.now();
+        if (st.shift === 1 && now - lastShiftTap < 350) st.shift = 2;
+        else st.shift = st.shift ? 0 : 1;
+        lastShiftTap = now; break;
+      }
+      case "capprev": {
+        const a = Array.from(text); let j = caret;
+        while (j > 0 && /\s/.test(a[j - 1])) j--;
+        let i = j; while (i > 0 && !/\s/.test(a[i - 1])) i--;
+        // skip a leading ‹ so the demo's ‹label› tokens capitalize their first letter
+        let k = i; while (k < j && !/\p{L}/u.test(a[k])) k++;
+        if (k < j) { a[k] = a[k].toUpperCase(); text = a.join(""); }
+        break;
+      }
+      case "space": ins(" "); break;
+      case "enter": ins("\n"); break;
+      case "bs": if (caret > 0) { const a = Array.from(text); a.splice(caret - 1, 1); text = a.join(""); caret--; } break;
+      default: break;
+    }
+    if (st.mode === "A" || st.mode === "a") st.lastEn = st.mode;
+    renderOut(); renderLive();
+  }
+  document.getElementById("cls-narrow").addEventListener("click", () => { st.wide = false; st.shift = 0; renderLive(); });
+  document.getElementById("cls-wide").addEventListener("click", () => { st.wide = true; st.shift = 0; renderLive(); });
+  document.querySelectorAll("#e-seg button").forEach(b => b.addEventListener("click", () => { st.elayout = b.dataset.e; renderLive(); }));
+  const seg = document.getElementById("bot-seg");
+  Object.keys(BOTTOMS).forEach(v => {
+    const b = el("button", null, esc(BOTTOMS[v].name)); b.type = "button"; b.dataset.v = v;
+    b.addEventListener("click", () => { BOTTOM = v; renderLive(); });
+    seg.appendChild(b);
+  });
+  renderOut(); renderLive();
+
+  // ---------- bottom rows ----------
+  const bots = document.getElementById("bottoms");
+  Object.keys(BOTTOMS).forEach(v => {
+    const item = el("div", "item");
+    const meta = el("div", "meta");
+    meta.appendChild(el("h3", null, esc(BOTTOMS[v].name)));
+    meta.appendChild(el("span", "chip", v === "default" ? "§1.1 default" : "§1.2 setting"));
+    item.appendChild(meta);
+    const f = el("div", "frame narrow");
+    const wrap = el("div", "board");
+    const r = el("div", "row");
+    BOTTOMS[v].keys.forEach(k => { const b = keyEl(k, null, null); if (b.tagName === "BUTTON") { b.tabIndex = -1; b.style.cursor = "default"; } r.appendChild(b); });
+    wrap.appendChild(r); f.appendChild(wrap);
+    const sc = el("div", "scroll"); sc.appendChild(f); item.appendChild(sc);
+    bots.appendChild(item);
+  });
+
+  // ---------- gallery ----------
+  const G = [
+    { title: "EN wide, lowercase (a)", ids: ["en-wide-a"], cls: "wide", st: { mode: "a" }, chips: ["§3.1", "wide"],
+      notes: ["JIS key set, 12 keys per row in a straight grid: the number row ends at <code>- ^</code> (no ¥ key).", "⇪ left of Z toggles between A and a and is lit in A."] },
+    { title: "EN wide, uppercase (A)", ids: ["en-wide-A"], cls: "wide", st: { mode: "A" }, chips: ["§3.1", "wide"],
+      notes: ["Letters only change case. Digits and symbols stay the same."] },
+    { title: "EN narrow, lowercase (a) and uppercase (A)", ids: ["en-narrow-a", "en-narrow-A"], cls: "narrow",
+      sts: [{ mode: "a" }, { mode: "A" }], chips: ["§3.2", "narrow"],
+      notes: ["7 keys per row, about 1.86u each. No case key in the grid: case changes only with the bottom-row A and a keys.",
+              "The two dotted keys type the other case (<code>T A</code> / <code>e t</code>) without changing the case state.",
+              "No number row. Digits are on the symbol layer."] },
+    { title: "EN predictive (E)", ids: ["en-pred-d"], cls: "narrow", st: { mode: "E" }, chips: ["§3.3", "both classes", "draft"],
+      notes: ["Spelling-based, 20 equal keys (5 × 4, 2.6u each). 17 single letters; ZQP, XJK and VBY group the nine rarer ones, and every letter is on exactly one key.",
+              "The groups are the best of all 280 ways to split z q x j k v b p y into three keys of three. The first draft (ZQX JKV BPY) was the worst, because b and p shared a key.",
+              "Tested offline (20,000 words): first 99.5% without context and 100% with the previous word (rounded)."] },
+    { title: "Alternative A: sound keys", ids: ["en-pred"], cls: "narrow", st: { mode: "E" }, chips: ["§3.4", "alternative"],
+      notes: ["English typed by sound, one tap per sound, and decoded by a pronunciation dictionary plus an n-gram model. 6 × 4 grid, every key ≈ 2.17u.",
+              "Rows 1–2 are vowels: あ /ɑ/, 에이 /eɪ/, 에 /ɛ/, い /ɪ/, 오 /oʊ/, う /uː/; æ /æ/, 아우 /aʊ/, イー /iː/, 아이 /aɪ/, o(au) /ɔ/, ü /ʊ/. Unstressed vowels accept any vowel key.",
+              "Rows 3–4 are ten consonant groups, a wildcard (*, any one sound) and · (end of a word part, as in inter · ballistic).",
+              "Tested offline on 20,000 common words: with the previous word as context, the intended word is first about 97–98% of the time and in the 4-word bar about 100%."] },
+    { title: "KO wide: JIS Korean Mode A", ids: ["ko-wide"], cls: "wide", st: { mode: "K" }, chips: ["§4.1", "wide"],
+      notes: ["12 keys per row in a straight grid: the number row ends at <code>( )</code>.", "Corner legends are the Shift output (digits on Shift). ⇧ is one-shot, and a double tap locks it.",
+              "⇧ then ㅋ types plain ㅋ (no F10). Half-width letters come from the candidate bar's English reading instead."] },
+    { title: "KO narrow", ids: ["ko-narrow"], cls: "narrow", st: { mode: "K" }, chips: ["§4.2", "narrow", "flick"],
+      notes: ["8 × 4 straight grid, every key 13/8 ≈ 1.63u: 19 consonants and 13 vowel keys.",
+              "Tap types the big legend. Flick N / E / S / W types the small legend on that side; a blank side types nothing.",
+              "Consonant keys flick like the ㅘ key: N ㅗ, E ㅏ, S ㅜ, W ㅓ, so ㄱ flicked E is 가. Their tap is the consonant alone.",
+              "The ㅘ key (right of ㅍ) has ㅗ ㅏ ㅜ ㅓ; # has the y-vowels in the same directions (ㅛ ㅑ ㅠ ㅕ). ㅒ and ㅖ are tap-only keys."] },
+    { title: "JA wide: JIS kana (ひ)", ids: ["ja-wide"], cls: "wide", st: { mode: "h" }, chips: ["§4.3", "wide"],
+      notes: ["13 keys in every row: a straight 13 × 4 grid.", "Hi and Ka are the script keys, like ⇪ in EN: they do exactly what the bottom row's ひ and カ do, and the active one is lit. っ has its own key, and ⇧ then つ still types っ.",
+              "Corner legends are Shift: small kana, を, 「 」 、 。 ・.", "゛ and ゜ apply to the kana before them."] },
+    { title: "JA narrow: flick kana, hiragana (ひ) and katakana (カ)", ids: ["ja-narrow", "ja-narrow"], cls: "narrow",
+      sts: [{ mode: "h" }, { mode: "k" }], chips: ["§4.4", "narrow", "flick"],
+      notes: ["ひ and カ in the bottom row work like A and a: the kana keys type and show the active script. Both modes predict both scripts, weighted toward the active one.",
+              "5 × 4 straight grid, every key 13/5 = 2.6u. Gboard's convention: tap a, W i, N u, E e, S o.",
+              "Columns 1–3 are Gboard's あかさ / たなは / まやら block with わ under や. ゛ and ゜ flank わ where Gboard has 小゛゜ and its punctuation key.",
+              "Column 4 is small kana, each in the row of its full-size kana: ぁ (all five), っ, ゃ (ゅ N, ょ S), ゎ.",
+              "Column 5 is punctuation: 、 and 。 flick W ！ and E ？. 「」 taps \", W 「, E 」, N 『, S 』. ・ taps ・, and dragging it moves the caret."] },
+    { title: "Alternative A: consonant-flick variant", ids: ["en-pred-flick"], cls: "narrow", st: { mode: "E" }, chips: ["§3.4", "alternative"],
+      notes: ["Same keys; the ten consonant keys also flick. Tap = the consonant alone; E + あ, W + ʌ (uh, nearest 어), N + o(au), S + う.",
+              "ʌ is only reachable as a flick after a consonant. Vowel keys, * and · don't flick.",
+              "Tested offline: 3.73 gestures per word against 4.25 taps for the tap-only layout, at the same accuracy."] },
+    { title: "Alternative B: QWERTY groups", ids: ["en-pred-qg"], cls: "narrow", st: { mode: "E" }, chips: ["§3.4", "alternative"],
+      notes: ["Spelling-based: one tap per letter, and each key means any letter on its label. Row 1 is exact vowels (≈ 2.17u); rows 2–4 are overlapping QWERTY chunks (≈ 4.33u), each spanning two top keys.",
+              "R, U, F, H, J, C, V and B are on two keys; either is correct.",
+              "Tested offline (20,000 words, previous word as context): first 96–99% depending on which key you press for the overlaps, in the bar ~100%. Making the lower keys consonant-only gives 99.0% whichever key you press."] },
+    { title: "Alternative C: near-exact", ids: ["en-pred-c"], cls: "narrow", st: { mode: "E" }, chips: ["§3.4", "alternative"],
+      notes: ["Spelling-based, 24 equal keys. Every key is one letter except GH, HJ, KL and NM; H is on two keys, either is correct.",
+              "⇪ is not Shift: it capitalizes the word just before the cursor (\"hello\" ⇪ → \"Hello\").",
+              "Tested offline (20,000 words): first 99.0% without context and 99.9% with the previous word, in the bar 100%. Most remaining clashes are n/m (am/an, then/them)."] },
+    { title: "Symbols, page 1", ids: ["sym-1"], cls: "narrow", st: { mode: "a", sym: 1 }, chips: ["§5", "all modes"],
+      notes: ["10 × 4, digits on top, JIS conventions: Shift+1 to Shift+9 are <code>! \" # $ % &amp; ' ( )</code>.",
+              "Rows 2–4 are a proposal, in JIS key order with each symbol next to its Shift partner."] },
+    { title: "Symbols, page 2", ids: ["sym-2"], cls: "narrow", st: { mode: "a", sym: 2 }, chips: ["§5", "draft"],
+      notes: ["Proposal: <code>&lt; &gt;</code> plus CJK punctuation. The empty slots are still open."] }
+  ];
+
+  const gal = document.getElementById("gallery");
+  G.forEach(g => {
+    const item = el("article", "item");
+    const meta = el("div", "meta");
+    meta.appendChild(el("h3", null, esc(g.title)));
+    g.chips.forEach(ch => meta.appendChild(el("span", "chip" + (/reserved|draft/.test(ch) ? " draft" : ""), esc(ch))));
+    item.appendChild(meta);
+    const pair = el("div", "pair");
+    g.ids.forEach((id, i) => {
+      const s = Object.assign({ sym: 0, shift: 0 }, (g.sts ? g.sts[i] : g.st));
+      const f = el("div", "frame " + g.cls);
+      f.appendChild(board(id, s, null));
+      f.querySelectorAll("button").forEach(b => { b.tabIndex = -1; b.style.cursor = "default"; });
+      const sc = el("div", "scroll"); sc.appendChild(f); pair.appendChild(sc);
+    });
+    item.appendChild(pair);
+    const ul = el("ul", "notes"); g.notes.forEach(n => ul.appendChild(el("li", null, n))); item.appendChild(ul);
+    gal.appendChild(item);
+  });
+})();
+</script>
+</body>
+</html>

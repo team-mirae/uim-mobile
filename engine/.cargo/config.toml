@@ -1,0 +1,7 @@
+# jis-korean-engine also builds as a cdylib, which needs the NDK's linker for Android targets.
+[target.aarch64-linux-android]
+linker = "/Users/themrsung/Library/Android/sdk/ndk/30.0.16248370/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android29-clang"
+[target.armv7-linux-androideabi]
+linker = "/Users/themrsung/Library/Android/sdk/ndk/30.0.16248370/toolchains/llvm/prebuilt/darwin-x86_64/bin/armv7a-linux-androideabi29-clang"
+[target.x86_64-linux-android]
+linker = "/Users/themrsung/Library/Android/sdk/ndk/30.0.16248370/toolchains/llvm/prebuilt/darwin-x86_64/bin/x86_64-linux-android29-clang"

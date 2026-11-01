@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">uim</string>
+    <string name="ime_name">uim</string>
+    <string name="subtype_en">English</string>
+    <string name="subtype_ko">한국어</string>
+    <string name="subtype_ja">日本語</string>
+</resources>

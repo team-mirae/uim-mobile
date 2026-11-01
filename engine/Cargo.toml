@@ -1,0 +1,20 @@
+[package]
+name = "uim-engine"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "MIT"
+description = "Engine of uim, a touch keyboard for English, Korean and Japanese"
+
+[dependencies]
+# Korean composition is jis-korean's, unchanged (SPEC §4.1). The lite engine: no predictor data.
+jis-korean-engine = { path = "../../jis-korean/engine", default-features = false }
+
+[lib]
+name = "uim"
+crate-type = ["rlib", "staticlib"]
+
+[profile.release]
+opt-level = "s"
+lto = true
+panic = "unwind"
